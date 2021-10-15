@@ -75,6 +75,16 @@ func NewIPv6Conn(ifi *net.Interface, group net.IP, port int) (p PacketConn, err 
 		return nil, err
 	}
 
+	if err := pkt.SetMulticastHopLimit(255); err != nil {
+		c.Close()
+		return nil, err
+	}
+
+	if err := pkt.SetHopLimit(255); err != nil {
+		c.Close()
+		return nil, err
+	}
+
 	return &ipv6Conn{
 		PacketConn: pkt,
 		ifi:        ifi,
