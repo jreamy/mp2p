@@ -30,6 +30,12 @@ func main() {
 
 	ifi, err := net.InterfaceByName(*ifiFlag)
 	if err != nil {
+		log.Println("interfaces include:")
+		allIfaces, _ := net.Interfaces()
+		for _, ifi := range allIfaces {
+			log.Println(" - " + ifi.Name)
+		}
+
 		log.Fatalf("network interface invalid: %v", err)
 	}
 
