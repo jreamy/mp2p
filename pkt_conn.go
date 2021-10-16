@@ -125,7 +125,7 @@ type ipv6Conn struct {
 }
 
 func (i *ipv6Conn) WriteTo(b []byte, dst net.Addr) (n int, err error) {
-	wcm := &ipv6.ControlMessage{TrafficClass: 0xe0, HopLimit: 1, IfIndex: i.ifi.Index}
+	wcm := &ipv6.ControlMessage{TrafficClass: 0xe0, HopLimit: 255, IfIndex: i.ifi.Index}
 	return i.PacketConn.WriteTo(b, wcm, dst)
 }
 func (i *ipv6Conn) ReadFrom(b []byte) (n int, src net.Addr, err error) {
