@@ -52,7 +52,7 @@ If you try this out and find there's a better configuration that works in more s
 
 ## Addresses
 
-The ipv6 spec has a range of globally routable, transient ipv6 multicast addresses that are essentially meant for use cases like this (prefix with ff1e). The ipv4 spec doesn't have quite the same intentional setup for self-assigned multicast addresses, so I approximately picked addresses from 224.0.224.0-224.0.249.255 (designated as unassigned by IANNA).
+The ipv6 spec has a range of globally routable, transient ipv6 multicast addresses that are essentially meant for use cases like this (prefix with ff1e). The ipv4 spec doesn't have quite the same intentional setup for self-assigned multicast addresses, so I approximately picked addresses from 224.0.224.0-224.0.249.255 (designated as unassigned by IANA).
 
 Cheers.
 Jack
