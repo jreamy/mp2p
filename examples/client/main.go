@@ -76,6 +76,8 @@ func main() {
 		log.Printf("sending session initiation payload %+v", sessInit)
 	}
 
+	time.Sleep(time.Second)
+
 	// Send the session initiation
 	if _, err := conn.WriteTo(sessInit.Bytes(), peerAddr); err != nil {
 		log.Fatalf("failed to send session initiation with: %v", err)
