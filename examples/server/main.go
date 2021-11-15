@@ -24,6 +24,7 @@ func main() {
 
 	ipv4 := flag.Bool("ipv4", false, "use ipv4 address")
 	ifiFlag := flag.String("ifi", "en0", "network interface to use")
+	verbose := flag.Bool("v", false, "verbose logging")
 	flag.Parse()
 
 	ip, key, err := config.GetConfig("server.conf", *ipv4)
@@ -67,6 +68,10 @@ func main() {
 			continue
 		}
 
+		if *verbose {
+			log.Printf("received payload %+v", msg)
+		}
+
 		switch x := msg.(type) {
 		case mp2p.AddressDeclarationPayload:
 
@@ -74,6 +79,10 @@ func main() {
 			if !x.Validate() {
 				log.Printf("address declaration had invalid signature")
 				continue
+			}
+
+			if *verbose {
+				log.Printf("registering peer %+v", net.UDPAddr{Port: int(x.Port), IP: net.IP(x.Address[:])})
 			}
 
 			// General application would be more selective that accepting any peer connection
@@ -120,6 +129,10 @@ func main() {
 				addr: peer,
 			}
 
+			if *verbose {
+				log.Printf("sending session initiation response %+v", resp)
+			}
+
 			// Respond to the client with their half of the diffie key
 			if _, err := conn.WriteTo(resp.Bytes(), peer); err != nil {
 				log.Printf("failed to send session initiation response")
@@ -147,6 +160,9 @@ func main() {
 			fmt.Println(string(data))
 
 			resp := mp2p.NewSessionDataPayload(sess.key, x.SessionID, []byte("Hi this is Jack : )"))
+			if *verbose {
+				log.Printf("sending session response %+v", resp)
+			}
 			conn.WriteTo(resp.Bytes(), sess.addr)
 		}
 	}

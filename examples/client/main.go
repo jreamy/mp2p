@@ -18,6 +18,7 @@ func main() {
 	addrFlag := flag.String("addr", "", "peer address to ping")
 	publFlag := flag.String("publ", "", "peer public key")
 	ifiFlag := flag.String("ifi", "en0", "network interface to use")
+	verbose := flag.Bool("v", false, "verbose logging")
 	flag.Parse()
 
 	// Parse the command line args for the peer to talk to
@@ -71,6 +72,10 @@ func main() {
 		log.Fatalf("failed to generate session initiation with: %v", err)
 	}
 
+	if *verbose {
+		log.Printf("sending session initiation payload %+v", sessInit)
+	}
+
 	// Send the session initiation
 	if _, err := conn.WriteTo(sessInit.Bytes(), peerAddr); err != nil {
 		log.Fatalf("failed to send session initiation with: %v", err)
@@ -80,6 +85,10 @@ func main() {
 	msg, _, err := read(conn)
 	if err != nil {
 		log.Fatalf("failed to parse message with %v", err)
+	}
+
+	if *verbose {
+		log.Printf("received payload %+v", msg)
 	}
 
 	var sessKey []byte
@@ -112,6 +121,10 @@ func main() {
 	// Send the server a message
 	sessData := mp2p.NewSessionDataPayload(sessKey, sessInit.SessionID, []byte("Hello server, how are you?"))
 
+	if *verbose {
+		log.Printf("sending session data %+v", sessData)
+	}
+
 	// Send the session data
 	if _, err := conn.WriteTo(sessData.Bytes(), peerAddr); err != nil {
 		log.Fatalf("failed to send session data with: %v", err)
@@ -121,6 +134,10 @@ func main() {
 	msg, _, err = read(conn)
 	if err != nil {
 		log.Fatalf("failed to parse message with %v", err)
+	}
+
+	if *verbose {
+		log.Printf("received payload %+v", msg)
 	}
 
 	switch x := msg.(type) {
