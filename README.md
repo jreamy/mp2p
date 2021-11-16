@@ -50,6 +50,7 @@ This is working on my local network, but I haven't gotten a chance to test it ou
 
 Annecdotally, it works better to build the go client than to use go run.
 This generally requires a bunch of retrying... I'm working on making it more robust.
+I'm not sure why, but there seems to be a problem with _actually_ joining the multicast group, or a problem staying in the group, idk...
 
 I've come across a number of resources that say multicast isn't supported across the entire internet so this probably won't work in all cases, but it's a cool theory...
 
