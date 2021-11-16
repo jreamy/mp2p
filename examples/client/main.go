@@ -7,8 +7,8 @@ import (
 	"flag"
 	"fmt"
 	"log"
-	"time"
 	"net"
+	"time"
 
 	"github.com/jreamy/mp2p"
 	"github.com/jreamy/mp2p/examples/config"
@@ -19,7 +19,8 @@ func main() {
 	addrFlag := flag.String("addr", "", "peer address to ping")
 	publFlag := flag.String("publ", "", "peer public key")
 	ifiFlag := flag.String("ifi", "en0", "network interface to use")
-	verbose := flag.Bool("v", false, "verbose logging")
+	debug := flag.Bool("v", false, "debug logging")
+	verbose := flag.Bool("vv", false, "verbose logging")
 	flag.Parse()
 
 	// Parse the command line args for the peer to talk to
@@ -60,38 +61,38 @@ func main() {
 
 	fmt.Printf("my addr: %s\nmy publ: %s\n", ip, hex.EncodeToString(key.Public().(ed25519.PublicKey)))
 
-	// Send the address declaration
+	// Generate the payloads
 	addrDecl := mp2p.NewAddressDeclarationPayload(addr, key)
-
-	if _, err := conn.WriteTo(addrDecl.Bytes(), peerAddr); err != nil {
-		log.Fatalf("failed to send address declaration with: %v", err)
-	}
-
-	// Send the session initiation payload
 	sessInit, sessSecret, err := mp2p.NewSessionInitiationPayload(key, peerKey, nil)
 	if err != nil {
 		log.Fatalf("failed to generate session initiation with: %v", err)
 	}
 
-	if *verbose {
-		log.Printf("sending session initiation payload %+v", sessInit)
-	}
+	// Write to the peer with a built in retry
+	msg, _, err := writeWithRetry(conn, 10, time.Second, func() {
+		if _, err := conn.WriteTo(addrDecl.Bytes(), peerAddr); err != nil {
+			log.Fatalf("failed to send address declaration with: %v", err)
+		}
 
-	time.Sleep(time.Second)
+		if *debug {
+			log.Printf("sending session initiation payload")
+		} else if *verbose {
+			log.Printf("sending session initiation payload %+v", sessInit)
+		}
 
-	// Send the session initiation
-	if _, err := conn.WriteTo(sessInit.Bytes(), peerAddr); err != nil {
-		log.Fatalf("failed to send session initiation with: %v", err)
-	}
-
-	// Wait for a response
-	msg, _, err := read(conn)
+		// Send the session initiation
+		if _, err := conn.WriteTo(sessInit.Bytes(), peerAddr); err != nil {
+			log.Fatalf("failed to send session initiation with: %v", err)
+		}
+	})
 	if err != nil {
 		log.Fatalf("failed to parse message with %v", err)
 	}
 
-	if *verbose {
-		log.Printf("received payload %+v", msg)
+	if *debug {
+		log.Printf("received response payload")
+	} else if *verbose {
+		log.Printf("received response payload %+v", msg)
 	}
 
 	var sessKey []byte
@@ -124,23 +125,23 @@ func main() {
 	// Send the server a message
 	sessData := mp2p.NewSessionDataPayload(sessKey, sessInit.SessionID, []byte("Hello server, how are you?"))
 
-	if *verbose {
-		log.Printf("sending session data %+v", sessData)
-	}
+	msg, _, err = writeWithRetry(conn, 10, time.Second, func() {
+		if *debug {
+			log.Printf("sending session data")
+		} else if *verbose {
+			log.Printf("sending session data %+v", sessData)
+		}
 
-	// Send the session data
-	if _, err := conn.WriteTo(sessData.Bytes(), peerAddr); err != nil {
-		log.Fatalf("failed to send session data with: %v", err)
-	}
+		// Send the session data
+		if _, err := conn.WriteTo(sessData.Bytes(), peerAddr); err != nil {
+			log.Fatalf("failed to send session data with: %v", err)
+		}
+	})
 
-	// Wait for a response
-	msg, _, err = read(conn)
-	if err != nil {
-		log.Fatalf("failed to parse message with %v", err)
-	}
-
-	if *verbose {
-		log.Printf("received payload %+v", msg)
+	if *debug {
+		log.Printf("received response payload")
+	} else if *verbose {
+		log.Printf("received response payload %+v", msg)
 	}
 
 	switch x := msg.(type) {
@@ -159,6 +160,26 @@ func main() {
 	default:
 		log.Fatalf("failed to receive response from server")
 	}
+}
+
+func writeWithRetry(conn mp2p.PacketConn, count int, delay time.Duration, fn func()) (interface{}, []byte, error) {
+
+	done := make(chan bool)
+	defer close(done)
+
+	go func() {
+		for i := 1; i <= count; i++ {
+			fn()
+			select {
+			case <-time.After(time.Duration(i) * delay):
+				continue
+			case <-done:
+				return
+			}
+		}
+	}()
+
+	return read(conn)
 }
 
 func read(conn mp2p.PacketConn) (interface{}, []byte, error) {
