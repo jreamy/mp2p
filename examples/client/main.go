@@ -69,7 +69,7 @@ func main() {
 	}
 
 	// Write to the peer with a built in retry
-	msg, _, err := writeWithRetry(conn, 10, time.Second, func() {
+	msg, _, err := writeWithRetry(conn, 20, time.Second, func() {
 		if _, err := conn.WriteTo(addrDecl.Bytes(), peerAddr); err != nil {
 			log.Fatalf("failed to send address declaration with: %v", err)
 		}
@@ -125,7 +125,7 @@ func main() {
 	// Send the server a message
 	sessData := mp2p.NewSessionDataPayload(sessKey, sessInit.SessionID, []byte("Hello server, how are you?"))
 
-	msg, _, err = writeWithRetry(conn, 10, time.Second, func() {
+	msg, _, err = writeWithRetry(conn, 20, time.Second, func() {
 		if *debug {
 			log.Printf("sending session data")
 		} else if *verbose {

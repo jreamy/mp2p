@@ -1,7 +1,5 @@
 # mp2p - Multicast Peer to Peer
 
-TLDR; this doesn't work on the open internet :(
-
 **Objective:**
 "I want to be able to send encrypted data between devices, regardless of NAT and firewalls, and
 without an intermediate server"
@@ -46,7 +44,9 @@ my publ: 5bb97343a7b97e17f8944bf6f7a3cf36946be2928ad6270b14e854de802ee68a
 
 ## Results
 
-This is working on my local network, but I haven't gotten a chance to test it outside of my network. If you ping my server ^^ and it works, definitely reach out!
+This is working on my local network, but I haven't gotten a chance to test it outside of my network. If you ping my server ^^ and it works, definitely reach out! (my ipv4 address is 224.0.245.100)
+
+I've come across a number of resources that say multicast isn't supported across the entire internet so this probably won't work in all cases, but it's a cool theory...
 
 ## Addresses
 
