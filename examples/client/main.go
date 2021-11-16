@@ -58,6 +58,7 @@ func main() {
 		log.Fatalf("failed to intialize client: %v", err)
 	}
 	defer conn.Close()
+	time.Sleep(time.Second)
 
 	fmt.Printf("my addr: %s\nmy publ: %s\n", ip, hex.EncodeToString(key.Public().(ed25519.PublicKey)))
 

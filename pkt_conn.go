@@ -4,6 +4,7 @@ import (
 	"errors"
 	"net"
 	"strconv"
+	"time"
 
 	"golang.org/x/net/ipv4"
 	"golang.org/x/net/ipv6"
@@ -12,6 +13,7 @@ import (
 type PacketConn interface {
 	WriteTo(b []byte, dst net.Addr) (n int, err error)
 	ReadFrom(b []byte) (n int, src net.Addr, err error)
+	SetDeadline(time.Time) error
 	Close() error
 	Group() net.Addr
 }
@@ -103,9 +105,14 @@ func (i *ipv4Conn) WriteTo(b []byte, dst net.Addr) (n int, err error) {
 	wcm := &ipv4.ControlMessage{IfIndex: i.ifi.Index, TTL: 255}
 	return i.PacketConn.WriteTo(b, wcm, dst)
 }
+
 func (i *ipv4Conn) ReadFrom(b []byte) (n int, src net.Addr, err error) {
 	n, _, src, err = i.PacketConn.ReadFrom(b)
 	return
+}
+
+func (i *ipv4Conn) SetDeadline(d time.Time) error {
+	return i.PacketConn.SetDeadline(d)
 }
 
 func (i *ipv4Conn) Close() error {
@@ -131,6 +138,10 @@ func (i *ipv6Conn) WriteTo(b []byte, dst net.Addr) (n int, err error) {
 func (i *ipv6Conn) ReadFrom(b []byte) (n int, src net.Addr, err error) {
 	n, _, src, err = i.PacketConn.ReadFrom(b)
 	return
+}
+
+func (i *ipv6Conn) SetDeadline(d time.Time) error {
+	return i.PacketConn.SetDeadline(d)
 }
 
 func (i *ipv6Conn) Close() error {
