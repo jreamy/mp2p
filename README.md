@@ -49,6 +49,7 @@ my publ: 5bb97343a7b97e17f8944bf6f7a3cf36946be2928ad6270b14e854de802ee68a
 This is working on my local network, but I haven't gotten a chance to test it outside of my network. If you ping my server ^^ and it works, definitely reach out! (my ipv4 address is 224.0.245.100)
 
 Annecdotally, it works better to build the go client than to use go run.
+This generally requires a bunch of retrying... I'm working on making it more robust.
 
 I've come across a number of resources that say multicast isn't supported across the entire internet so this probably won't work in all cases, but it's a cool theory...
 
