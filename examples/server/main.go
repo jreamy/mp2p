@@ -165,7 +165,9 @@ func main() {
 			fmt.Println(string(data))
 
 			resp := mp2p.NewSessionDataPayload(sess.key, x.SessionID, []byte("Hi this is Jack : )"))
-			if *verbose {
+			if *debug {
+				log.Printf("sending session response")
+			} else if *verbose {
 				log.Printf("sending session response %+v", resp)
 			}
 			conn.WriteTo(resp.Bytes(), sess.addr)
