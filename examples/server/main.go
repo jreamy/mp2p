@@ -24,7 +24,8 @@ func main() {
 
 	ipv4 := flag.Bool("ipv4", false, "use ipv4 address")
 	ifiFlag := flag.String("ifi", "en0", "network interface to use")
-	verbose := flag.Bool("v", false, "verbose logging")
+	debug := flag.Bool("v", false, "debug logging")
+	verbose := flag.Bool("vv", false, "verbose logging")
 	flag.Parse()
 
 	ip, key, err := config.GetConfig("server.conf", *ipv4)
@@ -68,7 +69,9 @@ func main() {
 			continue
 		}
 
-		if *verbose {
+		if *debug {
+			log.Printf("received payload")
+		} else if *verbose {
 			log.Printf("received payload %+v", msg)
 		}
 
@@ -81,7 +84,7 @@ func main() {
 				continue
 			}
 
-			if *verbose {
+			if *debug || *verbose {
 				log.Printf("registering peer %+v", net.UDPAddr{Port: int(x.Port), IP: net.IP(x.Address[:])})
 			}
 
@@ -129,7 +132,9 @@ func main() {
 				addr: peer,
 			}
 
-			if *verbose {
+			if *debug {
+				log.Printf("sending session initiation response")
+			} else if *verbose {
 				log.Printf("sending session initiation response %+v", resp)
 			}
 
