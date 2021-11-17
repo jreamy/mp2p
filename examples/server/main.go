@@ -2,14 +2,12 @@ package main
 
 import (
 	"bytes"
-	"context"
 	"crypto/ed25519"
 	"encoding/hex"
 	"flag"
 	"fmt"
 	"log"
 	"net"
-	"time"
 
 	"github.com/jreamy/mp2p"
 	"github.com/jreamy/mp2p/examples/config"
@@ -31,8 +29,8 @@ func main() {
 	flag.Parse()
 
 	// Base context that gets cancelled when exiting
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	// ctx, cancel := context.WithCancel(context.Background())
+	// defer cancel()
 
 	ip, key, err := config.GetConfig("server.conf", *ipv4)
 
@@ -54,7 +52,7 @@ func main() {
 	defer conn.Close()
 
 	// Maintain multicast group membership
-	mp2p.MaintainJoin(ctx, conn, time.Second)
+	// mp2p.MaintainJoin(ctx, conn, time.Second)
 
 	fmt.Printf("my addr: %s\nmy publ: %s\n", ip, hex.EncodeToString(key.Public().(ed25519.PublicKey)))
 
