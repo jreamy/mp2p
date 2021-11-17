@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"crypto/ed25519"
 	"encoding/hex"
 	"flag"
@@ -22,6 +23,10 @@ func main() {
 	debug := flag.Bool("v", false, "debug logging")
 	verbose := flag.Bool("vv", false, "verbose logging")
 	flag.Parse()
+
+	// Base context that gets cancelled when exiting
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
 	// Parse the command line args for the peer to talk to
 	peerIP := net.ParseIP(*addrFlag)
@@ -59,6 +64,9 @@ func main() {
 	}
 	defer conn.Close()
 	time.Sleep(time.Second)
+
+	// Maintain multicast group membership
+	mp2p.MaintainJoin(ctx, conn, time.Second)
 
 	fmt.Printf("my addr: %s\nmy publ: %s\n", ip, hex.EncodeToString(key.Public().(ed25519.PublicKey)))
 

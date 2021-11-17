@@ -1,21 +1,27 @@
 package mp2p
 
 import (
+	"context"
 	"errors"
+	"log"
 	"net"
 	"strconv"
+	"time"
 
 	"golang.org/x/net/ipv4"
 	"golang.org/x/net/ipv6"
 )
 
+// PacketConn is the shared interface of an ipv4 or ipv6 packet connection
 type PacketConn interface {
 	WriteTo(b []byte, dst net.Addr) (n int, err error)
 	ReadFrom(b []byte) (n int, src net.Addr, err error)
 	Close() error
 	Group() net.Addr
+	Join() error
 }
 
+// NewConn creates a new ipv4 or ipv6 packet connection
 func NewConn(ifi *net.Interface, group net.IP, port int) (PacketConn, error) {
 	if group.To4() != nil {
 		return NewIPv4Conn(ifi, group, port)
@@ -24,6 +30,7 @@ func NewConn(ifi *net.Interface, group net.IP, port int) (PacketConn, error) {
 	return NewIPv6Conn(ifi, group, port)
 }
 
+// NewIPv4Conn creates a new ipv4 packet connection
 func NewIPv4Conn(ifi *net.Interface, group net.IP, port int) (p PacketConn, err error) {
 	if ifi, err = getIfi(ifi); err != nil {
 		return nil, err
@@ -58,6 +65,7 @@ func NewIPv4Conn(ifi *net.Interface, group net.IP, port int) (p PacketConn, err 
 	}, nil
 }
 
+// NewIPv6Conn creates a new ipv6 packet connection
 func NewIPv6Conn(ifi *net.Interface, group net.IP, port int) (p PacketConn, err error) {
 	if ifi, err = getIfi(ifi); err != nil {
 		return nil, err
@@ -92,7 +100,7 @@ func NewIPv6Conn(ifi *net.Interface, group net.IP, port int) (p PacketConn, err 
 	}, nil
 }
 
-// ipv4Conn is an IPv4 implementation of PacketConn
+// ipv4Conn is an ipv4 implementation of PacketConn
 type ipv4Conn struct {
 	*ipv4.PacketConn
 	ifi   *net.Interface
@@ -110,12 +118,19 @@ func (i *ipv4Conn) ReadFrom(b []byte) (n int, src net.Addr, err error) {
 }
 
 func (i *ipv4Conn) Close() error {
-	i.LeaveGroup(i.ifi, i.group)
+	if err := i.LeaveGroup(i.ifi, i.group); err != nil {
+		i.PacketConn.Close()
+		return err
+	}
 	return i.PacketConn.Close()
 }
 
 func (i *ipv4Conn) Group() net.Addr {
 	return i.group
+}
+
+func (i *ipv4Conn) Join() error {
+	return i.PacketConn.JoinGroup(i.ifi, i.group)
 }
 
 // ipv4Conn is an IPv6 implementation of PacketConn
@@ -135,12 +150,33 @@ func (i *ipv6Conn) ReadFrom(b []byte) (n int, src net.Addr, err error) {
 }
 
 func (i *ipv6Conn) Close() error {
-	i.LeaveGroup(i.ifi, i.group)
+	if err := i.LeaveGroup(i.ifi, i.group); err != nil {
+		i.PacketConn.Close()
+		return err
+	}
 	return i.PacketConn.Close()
 }
 
 func (i *ipv6Conn) Group() net.Addr {
 	return i.group
+}
+
+func (i *ipv6Conn) Join() error {
+	return i.PacketConn.JoinGroup(i.ifi, i.group)
+}
+
+// MaintainJoin continuously calls join, logging any errors that occur
+func MaintainJoin(ctx context.Context, pkt PacketConn, cadence time.Duration) {
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-time.After(cadence):
+			if err := pkt.Join(); err != nil {
+				log.Print(err.Error())
+			}
+		}
+	}
 }
 
 func getIfi(ifi *net.Interface) (*net.Interface, error) {
