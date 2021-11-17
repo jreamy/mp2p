@@ -36,7 +36,7 @@ func NewIPv4Conn(ifi *net.Interface, group net.IP, port int) (p PacketConn, err 
 		return nil, err
 	}
 
-	ipGroup := &net.UDPAddr{IP: group, Port: port}
+	ipGroup := &net.UDPAddr{IP: group}
 	c, err := net.ListenPacket("udp4", ":"+strconv.Itoa(port))
 	if err != nil {
 		return nil, err
@@ -61,6 +61,7 @@ func NewIPv4Conn(ifi *net.Interface, group net.IP, port int) (p PacketConn, err 
 	return &ipv4Conn{
 		PacketConn: pkt,
 		ifi:        ifi,
+		port:       port,
 		group:      ipGroup,
 	}, nil
 }
@@ -71,7 +72,7 @@ func NewIPv6Conn(ifi *net.Interface, group net.IP, port int) (p PacketConn, err 
 		return nil, err
 	}
 
-	ipGroup := &net.UDPAddr{IP: group, Port: port}
+	ipGroup := &net.UDPAddr{IP: group}
 	c, err := net.ListenPacket("udp6", "[::]:"+strconv.Itoa(port))
 	if err != nil {
 		return nil, err
@@ -96,6 +97,7 @@ func NewIPv6Conn(ifi *net.Interface, group net.IP, port int) (p PacketConn, err 
 	return &ipv6Conn{
 		PacketConn: pkt,
 		ifi:        ifi,
+		port:       port,
 		group:      ipGroup,
 	}, nil
 }
@@ -104,6 +106,7 @@ func NewIPv6Conn(ifi *net.Interface, group net.IP, port int) (p PacketConn, err 
 type ipv4Conn struct {
 	*ipv4.PacketConn
 	ifi   *net.Interface
+	port  int
 	group *net.UDPAddr
 }
 
@@ -137,6 +140,7 @@ func (i *ipv4Conn) Join() error {
 type ipv6Conn struct {
 	*ipv6.PacketConn
 	ifi   *net.Interface
+	port  int
 	group *net.UDPAddr
 }
 
