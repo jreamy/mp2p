@@ -1,12 +1,9 @@
 package mp2p
 
 import (
-	"context"
 	"errors"
-	"log"
 	"net"
 	"strconv"
-	"time"
 
 	"golang.org/x/net/ipv4"
 	"golang.org/x/net/ipv6"
@@ -73,7 +70,7 @@ func NewIPv6Conn(ifi *net.Interface, group net.IP, port int) (p PacketConn, err 
 	}
 
 	ipGroup := &net.UDPAddr{IP: group}
-	c, err := net.ListenPacket("udp6", "[::]:"+strconv.Itoa(port))
+	c, err := net.ListenUDP("udp6", &net.UDPAddr{Port: port})
 	if err != nil {
 		return nil, err
 	}
@@ -167,20 +164,6 @@ func (i *ipv6Conn) Group() net.Addr {
 
 func (i *ipv6Conn) Join() error {
 	return i.PacketConn.JoinGroup(i.ifi, i.group)
-}
-
-// MaintainJoin continuously calls join, logging any errors that occur
-func MaintainJoin(ctx context.Context, pkt PacketConn, cadence time.Duration) {
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case <-time.After(cadence):
-			if err := pkt.Join(); err != nil {
-				log.Print(err.Error())
-			}
-		}
-	}
 }
 
 func getIfi(ifi *net.Interface) (*net.Interface, error) {

@@ -21,11 +21,8 @@ func main() {
 	ifiFlag := flag.String("ifi", "en0", "network interface to use")
 	debug := flag.Bool("v", false, "debug logging")
 	verbose := flag.Bool("vv", false, "verbose logging")
+	loop := flag.Bool("loop", false, "continue pinging server")
 	flag.Parse()
-
-	// Base context that gets cancelled when exiting
-	// ctx, cancel := context.WithCancel(context.Background())
-	// defer cancel()
 
 	// Parse the command line args for the peer to talk to
 	peerIP := net.ParseIP(*addrFlag)
@@ -63,9 +60,6 @@ func main() {
 	}
 	defer conn.Close()
 	time.Sleep(time.Second)
-
-	// Maintain multicast group membership
-	// mp2p.MaintainJoin(ctx, conn, time.Second)
 
 	fmt.Printf("my addr: %s\nmy publ: %s\n", ip, hex.EncodeToString(key.Public().(ed25519.PublicKey)))
 
@@ -133,40 +127,49 @@ func main() {
 	// Send the server a message
 	sessData := mp2p.NewSessionDataPayload(sessKey, sessInit.SessionID, []byte("Hello server, how are you?"))
 
-	msg, _, err = writeWithRetry(conn, 20, time.Second, func() {
+	send := func() {
+		msg, _, err = writeWithRetry(conn, 20, time.Second, func() {
+			if *debug {
+				log.Printf("sending session data")
+			} else if *verbose {
+				log.Printf("sending session data %+v", sessData)
+			}
+
+			// Send the session data
+			if _, err := conn.WriteTo(sessData.Bytes(), peerAddr); err != nil {
+				log.Fatalf("failed to send session data with: %v", err)
+			}
+		})
+
 		if *debug {
-			log.Printf("sending session data")
+			log.Printf("received response payload")
 		} else if *verbose {
-			log.Printf("sending session data %+v", sessData)
+			log.Printf("received response payload %+v", msg)
 		}
 
-		// Send the session data
-		if _, err := conn.WriteTo(sessData.Bytes(), peerAddr); err != nil {
-			log.Fatalf("failed to send session data with: %v", err)
-		}
-	})
+		switch x := msg.(type) {
+		case mp2p.SessionDataPayload:
+			// Check the session id
+			if !bytes.Equal(sessInit.SessionID[:], x.SessionID[:]) {
+				log.Fatalf("session data had wrong id %s", x.SessionID)
+			}
 
-	if *debug {
-		log.Printf("received response payload")
-	} else if *verbose {
-		log.Printf("received response payload %+v", msg)
+			response, err := x.Decrypt(sessKey)
+			if err != nil {
+				log.Fatalf("failed to decrypt session data with: %v", err)
+			}
+
+			fmt.Println(string(response))
+		default:
+			log.Fatalf("failed to receive response from server")
+		}
 	}
-
-	switch x := msg.(type) {
-	case mp2p.SessionDataPayload:
-		// Check the session id
-		if !bytes.Equal(sessInit.SessionID[:], x.SessionID[:]) {
-			log.Fatalf("session data had wrong id %s", x.SessionID)
+	if *loop {
+		for {
+			send()
 		}
-
-		response, err := x.Decrypt(sessKey)
-		if err != nil {
-			log.Fatalf("failed to decrypt session data with: %v", err)
-		}
-
-		fmt.Println(string(response))
-	default:
-		log.Fatalf("failed to receive response from server")
+	} else {
+		send()
 	}
 }
 
