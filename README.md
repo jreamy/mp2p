@@ -60,7 +60,7 @@ The ipv6 spec has a range of globally routable, transient ipv6 multicast address
 
 I just set up a raspberry pi running the example server with:
  - ipv4 address: 224.0.247.161
- - ipv6 address: ff1e:dbb1:fba4:f445:d32b:817e:c21e:cb07
+ - ipv6 address: ff1e:4d1f:c255:1806:a036:db6e:77d:26f6
  - public key: 24b35b5e7d86fcf5a1348e023c794e081608b239c32d13cb65c51cb2a910f854
 
 Cheers.

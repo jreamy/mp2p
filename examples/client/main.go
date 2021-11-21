@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto/ed25519"
 	"encoding/hex"
+	"errors"
 	"flag"
 	"fmt"
 	"log"
@@ -61,6 +62,9 @@ func main() {
 	defer conn.Close()
 	time.Sleep(time.Second)
 
+	readBuffer := make(chan []byte, 10)
+	go readChannel(conn, readBuffer)
+
 	fmt.Printf("my addr: %s\nmy publ: %s\n", ip, hex.EncodeToString(key.Public().(ed25519.PublicKey)))
 
 	// Generate the payloads
@@ -71,7 +75,7 @@ func main() {
 	}
 
 	// Write to the peer with a built in retry
-	msg, _, err := writeWithRetry(conn, 20, time.Second, func() {
+	msg, _, err := writeWithRetry(readBuffer, 20, time.Second, func() {
 		if _, err := conn.WriteTo(addrDecl.Bytes(), peerAddr); err != nil {
 			log.Fatalf("failed to send address declaration with: %v", err)
 		}
@@ -88,7 +92,7 @@ func main() {
 		}
 	})
 	if err != nil {
-		log.Fatalf("failed to parse message with %v", err)
+		log.Fatalf("failed with: %v", err)
 	}
 
 	if *debug {
@@ -128,7 +132,7 @@ func main() {
 	sessData := mp2p.NewSessionDataPayload(sessKey, sessInit.SessionID, []byte("Hello server, how are you?"))
 
 	send := func() {
-		msg, _, err = writeWithRetry(conn, 20, time.Second, func() {
+		msg, _, err = writeWithRetry(readBuffer, 20, time.Second, func() {
 			if *debug {
 				log.Printf("sending session data")
 			} else if *verbose {
@@ -173,33 +177,31 @@ func main() {
 	}
 }
 
-func writeWithRetry(conn mp2p.PacketConn, count int, delay time.Duration, fn func()) (interface{}, []byte, error) {
+func writeWithRetry(ch chan []byte, count int, delay time.Duration, fn func()) (interface{}, []byte, error) {
 
-	done := make(chan bool)
-	defer close(done)
-
-	go func() {
-		for i := 1; i <= count; i++ {
-			fn()
-			select {
-			case <-time.After(time.Duration(i) * delay):
-				continue
-			case <-done:
-				return
-			}
+	for i := 1; i <= count; i++ {
+		fn()
+		select {
+		case <-time.After(time.Duration(i) * delay):
+			continue
+		case data := <-ch:
+			msg, err := mp2p.ParseMessage(data)
+			return msg, data, err
 		}
-	}()
-
-	return read(conn)
-}
-
-func read(conn mp2p.PacketConn) (interface{}, []byte, error) {
-	data := make([]byte, 1500)
-	n, _, err := conn.ReadFrom(data)
-	if err != nil {
-		return nil, nil, err
 	}
 
-	msg, err := mp2p.ParseMessage(data[:n])
-	return msg, data, err
+	return nil, nil, errors.New("no response received")
+}
+
+func readChannel(conn mp2p.PacketConn, ch chan []byte) {
+	for {
+		data := make([]byte, 1500)
+		n, _, err := conn.ReadFrom(data)
+		if err != nil {
+			log.Printf("failed to read with %v", err)
+			continue
+		}
+
+		ch <- data[:n]
+	}
 }
