@@ -15,7 +15,6 @@ type PacketConn interface {
 	ReadFrom(b []byte) (n int, src net.Addr, err error)
 	Close() error
 	Group() net.Addr
-	Join() error
 }
 
 // NewConn creates a new ipv4 or ipv6 packet connection
@@ -33,7 +32,7 @@ func NewIPv4Conn(ifi *net.Interface, group net.IP, port int) (p PacketConn, err 
 		return nil, err
 	}
 
-	ipGroup := &net.UDPAddr{IP: group}
+	ipGroup := &net.UDPAddr{IP: group, Port: port}
 	c, err := net.ListenPacket("udp4", ":"+strconv.Itoa(port))
 	if err != nil {
 		return nil, err
@@ -58,7 +57,6 @@ func NewIPv4Conn(ifi *net.Interface, group net.IP, port int) (p PacketConn, err 
 	return &ipv4Conn{
 		PacketConn: pkt,
 		ifi:        ifi,
-		port:       port,
 		group:      ipGroup,
 	}, nil
 }
@@ -69,8 +67,8 @@ func NewIPv6Conn(ifi *net.Interface, group net.IP, port int) (p PacketConn, err 
 		return nil, err
 	}
 
-	ipGroup := &net.UDPAddr{IP: group}
-	c, err := net.ListenUDP("udp6", &net.UDPAddr{Port: port})
+	ipGroup := &net.UDPAddr{IP: group, Port: port}
+	c, err := net.ListenPacket("udp6", "[::]:"+strconv.Itoa(port))
 	if err != nil {
 		return nil, err
 	}
@@ -94,7 +92,6 @@ func NewIPv6Conn(ifi *net.Interface, group net.IP, port int) (p PacketConn, err 
 	return &ipv6Conn{
 		PacketConn: pkt,
 		ifi:        ifi,
-		port:       port,
 		group:      ipGroup,
 	}, nil
 }
@@ -103,7 +100,6 @@ func NewIPv6Conn(ifi *net.Interface, group net.IP, port int) (p PacketConn, err 
 type ipv4Conn struct {
 	*ipv4.PacketConn
 	ifi   *net.Interface
-	port  int
 	group *net.UDPAddr
 }
 
@@ -129,15 +125,10 @@ func (i *ipv4Conn) Group() net.Addr {
 	return i.group
 }
 
-func (i *ipv4Conn) Join() error {
-	return i.PacketConn.JoinGroup(i.ifi, i.group)
-}
-
 // ipv4Conn is an IPv6 implementation of PacketConn
 type ipv6Conn struct {
 	*ipv6.PacketConn
 	ifi   *net.Interface
-	port  int
 	group *net.UDPAddr
 }
 
@@ -160,10 +151,6 @@ func (i *ipv6Conn) Close() error {
 
 func (i *ipv6Conn) Group() net.Addr {
 	return i.group
-}
-
-func (i *ipv6Conn) Join() error {
-	return i.PacketConn.JoinGroup(i.ifi, i.group)
 }
 
 func getIfi(ifi *net.Interface) (*net.Interface, error) {
