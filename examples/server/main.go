@@ -23,6 +23,7 @@ type session struct {
 func main() {
 
 	ipv4 := flag.Bool("ipv4", false, "use ipv4 address")
+	portFlag := flag.Int("port", 1024, "server port")
 	ifiFlag := flag.String("ifi", "en0", "network interface to use")
 	debug := flag.Bool("v", false, "debug logging")
 	verbose := flag.Bool("vv", false, "verbose logging")
@@ -31,25 +32,27 @@ func main() {
 
 	ip, key, err := config.GetConfig("server.conf", *ipv4)
 
-	ifi, err := net.InterfaceByName(*ifiFlag)
-	if err != nil {
-		log.Println("interfaces include:")
-		allIfaces, _ := net.Interfaces()
-		for _, ifi := range allIfaces {
-			log.Println(" - " + ifi.Name)
-		}
-
-		log.Fatalf("network interface invalid: %v", err)
-	}
-
+	var ifi *net.Interface
 	if *prefix {
 		ip, ifi, err = mp2p.NewPrefixedIPv6()
 		if err != nil {
 			log.Fatalf("failed to generate ipv6 addr: %v", err)
 		}
+		log.Printf("using interface: %s", ifi.Name)
+	} else {
+		ifi, err = net.InterfaceByName(*ifiFlag)
+		if err != nil {
+			log.Println("interfaces include:")
+			allIfaces, _ := net.Interfaces()
+			for _, ifi := range allIfaces {
+				log.Println(" - " + ifi.Name)
+			}
+
+			log.Fatalf("network interface invalid: %v", err)
+		}
 	}
 
-	conn, err := mp2p.NewConn(ifi, ip, 1024)
+	conn, err := mp2p.NewConn(ifi, ip, *portFlag)
 	if err != nil {
 		log.Fatalf("failed to intiialize server: %v", err)
 	}

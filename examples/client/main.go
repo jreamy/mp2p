@@ -18,6 +18,7 @@ import (
 func main() {
 	addrFlag := flag.String("addr", "", "peer address to ping")
 	publFlag := flag.String("publ", "", "peer public key")
+	portFlag := flag.Int("port", 1024, "peer port")
 	ifiFlag := flag.String("ifi", "en0", "network interface to use")
 	debug := flag.Bool("v", false, "debug logging")
 	verbose := flag.Bool("vv", false, "verbose logging")
@@ -31,7 +32,7 @@ func main() {
 		log.Fatalf("failed to parse peer ip: %s", *addrFlag)
 	}
 
-	peerAddr := &net.UDPAddr{IP: peerIP, Port: 1024}
+	peerAddr := &net.UDPAddr{IP: peerIP, Port: *portFlag}
 
 	peerKeyBytes, err := hex.DecodeString(*publFlag)
 	if len(peerKeyBytes) != ed25519.PublicKeySize || err != nil {
@@ -42,7 +43,6 @@ func main() {
 
 	// Client configuration
 	ip, key, err := config.GetConfig("client.conf", peerIP.To4() != nil)
-	addr := net.UDPAddr{IP: ip, Port: 1025}
 
 	var ifi *net.Interface
 	if *prefix {
@@ -50,7 +50,7 @@ func main() {
 		if err != nil {
 			log.Fatalf("failed to generate ipv6 addr: %v", err)
 		}
-		addr.IP = ip
+		log.Printf("using interface: %s", ifi.Name)
 	} else {
 		ifi, err = net.InterfaceByName(*ifiFlag)
 		if err != nil {
@@ -64,6 +64,7 @@ func main() {
 		}
 	}
 
+	addr := net.UDPAddr{IP: ip, Port: 1025}
 	conn, err := mp2p.NewConn(ifi, addr.IP, addr.Port)
 	if err != nil {
 		log.Fatalf("failed to intialize client: %v", err)
