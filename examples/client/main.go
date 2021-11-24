@@ -44,23 +44,24 @@ func main() {
 	ip, key, err := config.GetConfig("client.conf", peerIP.To4() != nil)
 	addr := net.UDPAddr{IP: ip, Port: 1025}
 
-	ifi, err := net.InterfaceByName(*ifiFlag)
-	if err != nil {
-		log.Println("interfaces include:")
-		allIfaces, _ := net.Interfaces()
-		for _, ifi := range allIfaces {
-			log.Println(" - " + ifi.Name)
-		}
-
-		log.Fatalf("network interface invalid: %v", err)
-	}
-
+	var ifi *net.Interface
 	if *prefix {
 		ip, ifi, err = mp2p.NewPrefixedIPv6()
 		if err != nil {
 			log.Fatalf("failed to generate ipv6 addr: %v", err)
 		}
 		addr.IP = ip
+	} else {
+		ifi, err = net.InterfaceByName(*ifiFlag)
+		if err != nil {
+			log.Println("interfaces include:")
+			allIfaces, _ := net.Interfaces()
+			for _, ifi := range allIfaces {
+				log.Println(" - " + ifi.Name)
+			}
+
+			log.Fatalf("network interface invalid: %v", err)
+		}
 	}
 
 	conn, err := mp2p.NewConn(ifi, addr.IP, addr.Port)
