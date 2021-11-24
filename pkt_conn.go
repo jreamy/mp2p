@@ -4,6 +4,7 @@ import (
 	"errors"
 	"net"
 	"strconv"
+	"time"
 
 	"golang.org/x/net/ipv4"
 	"golang.org/x/net/ipv6"
@@ -13,6 +14,7 @@ import (
 type PacketConn interface {
 	WriteTo(b []byte, dst net.Addr) (n int, err error)
 	ReadFrom(b []byte) (n int, src net.Addr, err error)
+	SetDeadline(time.Time) error
 	Close() error
 	Group() net.Addr
 }
@@ -39,7 +41,7 @@ func NewIPv4Conn(ifi *net.Interface, group net.IP, port int) (p PacketConn, err 
 	}
 
 	pkt := ipv4.NewPacketConn(c)
-	if err := pkt.JoinGroup(ifi, ipGroup); err != nil {
+	if err := pkt.JoinGroup(ifi, &net.UDPAddr{IP: group}); err != nil {
 		c.Close()
 		return nil, err
 	}
@@ -74,7 +76,7 @@ func NewIPv6Conn(ifi *net.Interface, group net.IP, port int) (p PacketConn, err 
 	}
 
 	pkt := ipv6.NewPacketConn(c)
-	if err := pkt.JoinGroup(ifi, ipGroup); err != nil {
+	if err := pkt.JoinGroup(ifi, &net.UDPAddr{IP: group}); err != nil {
 		c.Close()
 		return nil, err
 	}

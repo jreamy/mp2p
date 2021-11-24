@@ -26,11 +26,8 @@ func main() {
 	ifiFlag := flag.String("ifi", "en0", "network interface to use")
 	debug := flag.Bool("v", false, "debug logging")
 	verbose := flag.Bool("vv", false, "verbose logging")
+	prefix := flag.Bool("prefix6", false, "use an ipv6 unicast prefixed multicast address")
 	flag.Parse()
-
-	// Base context that gets cancelled when exiting
-	// ctx, cancel := context.WithCancel(context.Background())
-	// defer cancel()
 
 	ip, key, err := config.GetConfig("server.conf", *ipv4)
 
@@ -45,14 +42,19 @@ func main() {
 		log.Fatalf("network interface invalid: %v", err)
 	}
 
+	if *prefix {
+		ip, ifi, err = mp2p.NewPrefixedIPv6()
+		if err != nil {
+			log.Fatalf("failed to generate ipv6 addr: %v", err)
+		}
+		addr.IP = ip
+	}
+
 	conn, err := mp2p.NewConn(ifi, ip, 1024)
 	if err != nil {
 		log.Fatalf("failed to intiialize server: %v", err)
 	}
 	defer conn.Close()
-
-	// Maintain multicast group membership
-	// mp2p.MaintainJoin(ctx, conn, time.Second)
 
 	fmt.Printf("my addr: %s\nmy publ: %s\n", ip, hex.EncodeToString(key.Public().(ed25519.PublicKey)))
 
