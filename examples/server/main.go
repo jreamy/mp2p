@@ -47,7 +47,6 @@ func main() {
 		if err != nil {
 			log.Fatalf("failed to generate ipv6 addr: %v", err)
 		}
-		addr.IP = ip
 	}
 
 	conn, err := mp2p.NewConn(ifi, ip, 1024)
