@@ -56,7 +56,7 @@ I've come across a number of resources that say multicast isn't supported across
 
 ## Addresses
 
-The ipv6 spec has a range of globally routable, transient ipv6 multicast addresses that are essentially meant for use cases like this (prefix with ff1e). The ipv4 spec doesn't have quite the same intentional setup for self-assigned multicast addresses, so I approximately picked addresses from 224.0.224.0-224.0.249.255 (designated as unassigned by IANA).
+The ipv6 spec has a range of globally routable, transient ipv6 multicast addresses that are essentially meant for use cases like this (prefix with ff1e), as well as a spec for unicast-prefixed multicast addresses (prefix with ff3e, and include unicast prefix). The ipv4 spec doesn't have quite the same intentional setup for self-assigned multicast addresses, so I approximately picked addresses from 224.0.224.0-224.0.249.255 (designated as unassigned by IANA).
 
 I just set up a raspberry pi running the example server with:
  - ipv4 address: 224.0.247.161
