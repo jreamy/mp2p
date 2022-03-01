@@ -31,6 +31,7 @@ func main() {
 	flag.Parse()
 
 	ip, key, err := config.GetConfig("server.conf", *ipv4)
+	fmt.Println("using: " + ip.String())
 
 	var ifi *net.Interface
 	if *prefix {

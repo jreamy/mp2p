@@ -77,7 +77,7 @@ func NewIPv6FromPrefix(prefix *net.IPNet) net.IP {
 // NewIPv4 generates a random unassigned ipv4 multicast address
 func NewIPv4() net.IP {
 	ip, err := randIP(net.IPv4len)
-	if len(ip) != net.IPv6len || err != nil {
+	if len(ip) != net.IPv4len || err != nil {
 		return nil
 	}
 
