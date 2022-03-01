@@ -44,7 +44,7 @@ func NewIPv4Conn(ifi *net.Interface, group net.IP, port int) (p PacketConn, err 
 	pkt := ipv4.NewPacketConn(c)
 	if err := pkt.JoinGroup(ifi, &net.UDPAddr{IP: group}); err != nil {
 		c.Close()
-		return nil, fmt.Errorf("failed to join group: %w", err)
+		return nil, fmt.Errorf("failed to join group (%s): %w", group, err)
 	}
 
 	if err := pkt.SetMulticastTTL(255); err != nil {
