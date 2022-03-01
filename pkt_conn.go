@@ -2,6 +2,7 @@ package mp2p
 
 import (
 	"errors"
+	"fmt"
 	"net"
 	"strconv"
 	"time"
@@ -31,29 +32,29 @@ func NewConn(ifi *net.Interface, group net.IP, port int) (PacketConn, error) {
 // NewIPv4Conn creates a new ipv4 packet connection
 func NewIPv4Conn(ifi *net.Interface, group net.IP, port int) (p PacketConn, err error) {
 	if ifi, err = getIfi(ifi); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get interface: %w", err)
 	}
 
 	ipGroup := &net.UDPAddr{IP: group, Port: port}
 	c, err := net.ListenPacket("udp4", ":"+strconv.Itoa(port))
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to listen: %w", err)
 	}
 
 	pkt := ipv4.NewPacketConn(c)
 	if err := pkt.JoinGroup(ifi, &net.UDPAddr{IP: group}); err != nil {
 		c.Close()
-		return nil, err
+		return nil, fmt.Errorf("failed to join group: %w", err)
 	}
 
 	if err := pkt.SetMulticastTTL(255); err != nil {
 		c.Close()
-		return nil, err
+		return nil, fmt.Errorf("failed to set multicast ttl: %w", err)
 	}
 
 	if err := pkt.SetTTL(255); err != nil {
 		c.Close()
-		return nil, err
+		return nil, fmt.Errorf("failed to set ttl: %w", err)
 	}
 
 	return &ipv4Conn{
